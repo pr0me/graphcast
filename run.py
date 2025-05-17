@@ -93,7 +93,7 @@ def plot_data(
             cmap=cmap,
             extend=("both" if robust else "neither"))
         images.append(im)
-    plt.show()
+    plt.savefig(f"{fig_title}.png")
 
     # def update(frame):
     #     if "time" in first_data.dims:
@@ -299,21 +299,22 @@ plot_pred_samples = num_ensemble_members
 # Plot prediction samples and diffs
 
 plot_size = 5
-plot_max_steps = min(predictions.dims["time"], plot_pred_max_steps.value)
+plot_max_steps = min(predictions.dims["time"], plot_pred_max_steps)
 
-fig_title = plot_pred_variable.value
-if "level" in predictions[plot_pred_variable.value].coords:
-    fig_title += f" at {plot_pred_level.value} hPa"
+fig_title = plot_pred_variable
+if "level" in predictions[plot_pred_variable].coords:
+    fig_title += f" at {plot_pred_level} hPa"
 
-for sample_idx in range(plot_pred_samples.value):
+for sample_idx in range(plot_pred_samples):
     data = {
-        "Targets": scale(select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-        "Predictions": scale(select(predictions.isel(sample=sample_idx), plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-        "Diff": scale((select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps) -
-                select(predictions.isel(sample=sample_idx), plot_pred_variable.value, plot_pred_level.value, plot_max_steps)),
-                robust=plot_pred_robust.value, center=0),
+        "Targets": scale(select(eval_targets, plot_pred_variable, plot_pred_level, plot_max_steps), robust=plot_pred_robust),
+        "Predictions": scale(select(predictions.isel(sample=sample_idx), plot_pred_variable, plot_pred_level, plot_max_steps), robust=plot_pred_robust),
+        "Diff": scale((select(eval_targets, plot_pred_variable, plot_pred_level, plot_max_steps) -
+                select(predictions.isel(sample=sample_idx), plot_pred_variable, plot_pred_level, plot_max_steps)),
+                robust=plot_pred_robust, center=0),
     }
-    plot_data(data, fig_title + f", Sample {sample_idx}", plot_size, plot_pred_robust.value)
+    print(predictions.isel(sample=sample_idx))
+    plot_data(data, fig_title + f", Sample {sample_idx}", plot_size, plot_pred_robust)
 
 # Plot ensemble mean and CRPS
 
@@ -333,17 +334,18 @@ def crps(targets, predictions, bias_corrected = True):
 
 
 plot_size = 5
-plot_max_steps = min(predictions.dims["time"], plot_pred_max_steps.value)
+plot_max_steps = min(predictions.dims["time"], plot_pred_max_steps)
 
-fig_title = plot_pred_variable.value
-if "level" in predictions[plot_pred_variable.value].coords:
-    fig_title += f" at {plot_pred_level.value} hPa"
+fig_title = plot_pred_variable
+if "level" in predictions[plot_pred_variable].coords:
+    fig_title += f" at {plot_pred_level} hPa"
 
 data = {
-    "Targets": scale(select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-    "Ensemble Mean": scale(select(predictions.mean(dim=["sample"]), plot_pred_variable.value, plot_pred_level.value, plot_max_steps), robust=plot_pred_robust.value),
-    "Ensemble CRPS": scale(crps((select(eval_targets, plot_pred_variable.value, plot_pred_level.value, plot_max_steps)),
-                        select(predictions, plot_pred_variable.value, plot_pred_level.value, plot_max_steps)),
-                        robust=plot_pred_robust.value, center=0),
+    "Targets": scale(select(eval_targets, plot_pred_variable, plot_pred_level, plot_max_steps), robust=plot_pred_robust),
+    "Ensemble Mean": scale(select(predictions.mean(dim=["sample"]), plot_pred_variable, plot_pred_level, plot_max_steps), robust=plot_pred_robust),
+    "Ensemble CRPS": scale(crps((select(eval_targets, plot_pred_variable, plot_pred_level, plot_max_steps)),
+                        select(predictions, plot_pred_variable, plot_pred_level, plot_max_steps)),
+                        robust=plot_pred_robust, center=0),
 }
-plot_data(data, fig_title, plot_size, plot_pred_robust.value)
+print("\n[*] ENSEMBLE CRPS: {}\n".format(crps((select(eval_targets, plot_pred_variable, plot_pred_level, plot_max_steps)), select(predictions, plot_pred_variable, plot_pred_level, plot_max_steps))))
+plot_data(data, fig_title, plot_size, plot_pred_robust)
